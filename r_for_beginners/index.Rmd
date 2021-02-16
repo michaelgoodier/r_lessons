@@ -271,8 +271,11 @@ mutate(covid_data,
 ## The pipe %>%
 
 The pipe (which is the `%>%` symbol) is personally speaking the most vibesy bit of working with R and the tidyverse.
-You can imagine it as meaning the words _and then,_.
-you add it to the end of a line of code after you have done a function, and then it uses that line as the first argument in the next line of code.
+
+You can imagine it as meaning the words _, and then_
+
+You add it to the end of a line of code after you have done a function, and then it uses that line as the first argument in the next line of code.
+
 Here is an example from earlier
 ```{r results='hide'}
 #arrange covid_data by deaths, descending
