@@ -1966,7 +1966,7 @@ mutate(covid_data,
 by_deaths &lt;- arrange(covid_data,desc(deaths))
 #lets take a look at the first 10 rows
 head(by_deaths,10)</code></pre>
-<p>Lets rewrite it using the pipe (the comments are what the code is :</p>
+<p>Lets rewrite it using the pipe (the comments are what the code is doing in english):</p>
 <pre class="r"><code>#first, get covid data, and then
 by_deaths &lt;- covid_data %&gt;%
   #arrange by deaths, descending, and then

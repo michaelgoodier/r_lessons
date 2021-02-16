@@ -280,7 +280,7 @@ by_deaths <- arrange(covid_data,desc(deaths))
 #lets take a look at the first 10 rows
 head(by_deaths,10)
 ```
-Lets rewrite it using the pipe (the comments are what the code is :
+Lets rewrite it using the pipe (the comments are what the code is doing in english):
 ```{r}
 #first, get covid data, and then
 by_deaths <- covid_data %>%
