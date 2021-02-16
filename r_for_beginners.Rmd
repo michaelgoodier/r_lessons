@@ -1,0 +1,307 @@
+---
+title: "R for beginners"
+author: "Michael Goodier"
+date: "16/02/2021"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+theme: lumen
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Installing packages
+
+Useful functions in R come in packages
+The main one we will be using is a family of packages called tidyverse - this is a great way to learn as the functions are kind of like verbs, and do what they say, which makes your code easy to understand.
+You install a package in the following way (you only need to do this once). I've added some other packages we will be using below.
+```
+install.packages("tidyverse")
+install.packages("janitor")
+```
+And you run them in the following way (you have to do this every time you restart R)
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(readxl)
+```
+
+## Types of data {#types-of-data}
+
+Like in excel (cell format), R handles different types of data.
+You can assign data to variables, which saves them in the memory of the session, where you can call them later.
+You do that using the `<-` arrow symbol.
+
+### Numeric, character and logical
+Some basic data types are numeric, character and logical (true or false)
+```{r}
+# numeric integer
+vibes <- 100
+#you can then call the data by name and do maths with it
+vibes + 50
+
+# character
+my_name <- "Michael"
+
+# logical
+is_vibesy <- TRUE
+```
+
+### Vectors {#vectors}
+Vectors are a series of data points joined up into one object. You start them with the letter c, and then enclose all the data points in brackets.
+```{r}
+# vector
+numeric_vector_example <- c(100,30,40,50)
+character_vector <- c("Michael","Is","Amazing")
+```
+Lists are like vectors, but can contain different types of data, and even lists / vectors within them. You make them using list() (convenient!) You probably wont' use these that much to start with but here is an example anyway:
+```{r}
+random_list <- list("a",250,character_vector,500,numeric_vector_example)
+
+print(random_list)
+```
+### Data frames / tibbles
+Data frames (or tibbles) are technically a series of vectors joined up as columns. Mostly you will be working with these.
+```{r}
+# data frame / tibble
+cars_data <- mtcars
+
+#lets take a look at the first 10 rows
+head(cars_data,10)
+```
+
+## Importing / exporting data
+
+You can import data into R from most types of file. Usually you will use csv files (the readr package), but you can also read in excel (readxl), and json (jsonlite). There are loads of other types too but these will be the most common.
+
+### CSV files
+I usually use read_csv() (you first have to have loaded tidyverse or readr with library(tidyverse) or library(readr))
+To read in a csv from the internet and save it to your environment you can simply read in a URL, e.g.
+
+```{r}
+#covid_data <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=utla&metric=newAdmissions&metric=newCasesByPublishDate&metric=newDeaths28DaysByDeathDate&format=csv")
+```
+
+You can also save a csv to your working directory (if you are unsre what this is the function getwd() will tell you), and read it in using the file name:
+```{r}
+covid_data <- read_csv("utla_2021-02-10.csv")
+```
+### Excel files
+You can read in excel using the function read_excel() (you first have to have loaded readxl with library(readxl)).
+With excel files, you have to download them first, you can't just enter the URL directly.
+The first thing that goes in the brackets is the file name (in quotes)
+you can choose which sheet you want by putting that in quotes (or using the sheet number not in quotes)
+
+```{r}
+infection_survey <- read_excel("covid19infectionsurveydatasets20210205.xlsx", sheet = "1a")
+infection_survey <- read_excel("covid19infectionsurveydatasets20210205.xlsx", sheet = 2)
+
+```
+### Exporting
+You will usually want to export as a csv.
+You can do this with export_csv(). The first thing you write is the name of the data frame / tibble (not in quotes).
+The second thing is the name of the csv file you want to create, in quotes.
+```{r}
+write_csv(cars_data,"cars.csv")
+```
+
+## Manipulating data
+The main packages for manipulating data in the tidyverse are dplyr and tidyr - but I usually just load the whole tidyverse as often you will want to use functions across all the packages. Another useful package is the janitor package, which has a good function for cleaning the names of columns, and some others that make cleaning simple.
+
+Usually the workflow will be something like: read in data, clean the names, choose the columns you want, filter the data, add any colums/pivot/ do whatever you want, then arrange if you need to.
+
+### Renaming columns
+
+A useful function is clean_names() from the janitor package.
+```{r}
+covid_data <- clean_names(covid_data)
+
+#lets take a look at what that looks like (first 10 rows)
+head(covid_data,10)
+```
+You can see all the column names are lower case with _ instead of spaces.
+
+You can also rename columns using the rename() function from the dplyr package (part of the tidyverse, so we already have it loaded).
+The first argument is the name of the data frame, then you follow that with the columns you want renaming seperated by commas, in the format `new_name = old_name`.
+
+```{r}
+covid_data <- rename(covid_data,cases = new_cases_by_publish_date,deaths= new_deaths28days_by_death_date)
+
+#lets take a look at what that looks like (first 10 rows)
+head(covid_data,10)
+
+```
+You can see we have renamed our columns to cases and deaths, which makes doing work with them later on less time consuming. 
+
+It is worth noting, if you have a column name with spaces in it that you want to rename, you surround the name with back tick marks to tell r the words should be read together e.g.
+``new_name =  `Old Name` ``.
+
+### Selecting columns
+Often you will only want part of the data that you have read in.
+You can select the columns you do and don't want using the select() function.
+
+Select columns by naming them. The first argument is the name of the data frame, then the rest are column names seperated by commas.
+```{r}
+#select just the date, area_name and cases columns. Note I am not assigning this to anything, so it won't actually save in the environment and will simply print in the console.
+
+#If I wanted to overwrite my previous data, I would do covid_data <- select(covid_data,date,area_name,cases), or I could also save it as something new
+
+select(covid_data,date,area_name,cases)
+
+```
+You can select all columns apart from those with a specific name by adding a minus sign
+```{r}
+#removes the new_admissions column
+select(covid_data,-new_admissions)
+```
+You can select a range of columns using the : colon to select everything between and including two columns.
+```{r}
+#select everything between date and area_name
+select(covid_data,date:area_name)
+```
+You can select colums using their position, not just their name
+```{r}
+#select column 1, column 3 and columns 5 to 7
+select(covid_data,1,3,5:7)
+```
+You can combine all of these in one select(), just add a comma.
+
+Tip: while selecting, you can also rename your columns using the `new_name = old_name` trick e.g. 
+```{r}
+
+select(covid_data,date,area_name,new_cases = cases)
+
+```
+
+### Arranging columns
+Sometimes you might want to put your data in order, e.g. to see which row is the best/worst for something.
+
+You do that using the arrange() function (again from the dplyr package).
+
+As usual, the first argument is the data frame, and the rest are column names.
+
+The arrange() function defaults to ascending.
+```{r}
+#arrange by deaths, ascending
+by_deaths <- arrange(covid_data,deaths)
+```
+To arrange descending, use the desc() function within arrange.
+```{r}
+#arrange by deaths, ascending
+by_deaths <- arrange(covid_data,desc(deaths))
+
+#lets take a look
+head(by_deaths,10)
+```
+
+### Filtering rows
+Filtering is a key part of doing anything with data.
+The easiest way is using the filter() function (again from the dplyr package).
+First you have to know your "operators" which are used for logical tests.
+
+|Symbol    |What it means |
+|-----------|---------|
+|> |Greater than |
+|< |Less than |
+|>= |Greater than or equal to |
+|<= |Less than or equal to |
+|== |Equals |
+|!= |Not equal to |
+|%in% |Is one of |
+
+You also use and (`&`) and or (`|`) to build your filter queries.
+
+With filter(), the first argument is the data, then your logical statement.
+```{r}
+#only rows with above 100 deaths (again note I haven't saved this to my environment with <- )
+filter(covid_data, deaths>100)
+```
+Let's try filtering for over 100 deaths AND more than 100 cases. The comma basically performs the same function as the `&` symbol would.
+```{r}
+#only rows with above 100 deaths (again note I haven't saved this to my environment with <- )
+filter(covid_data, deaths>100, cases>100)
+```
+Let's filter to only look at Derbyshire
+```{r}
+#only rows with Derbyshire as area_name
+filter(covid_data,area_name=="Derbyshire")
+```
+What about both Derbyshire and Essex? We do that with the `%in%` symbol, and then provide a _vector_ (see [Types of data](#vectors)).
+```{r}
+#only rows with area_name as one of Derbyshire or Essex
+filter(covid_data,area_name %in% c("Derbyshire","Essex"))
+
+#you could even do that by writing the vector first
+areas_we_want <- c("Derbyshire","Essex")
+
+#and then filtering
+derbyshire_essex_covid <- filter(covid_data,area_name %in% areas_we_want)
+```
+
+### Adding or changing columns
+
+You can add new columns based on old ones, or change your current columns using the mutate() function in dplyr.
+
+The first argument is the data (as usual), the next is the column names in the format `mutate(new_colum = [do something with old_column(s)])`.
+
+Let's add a new column with the difference between cases and deaths (for some reason).
+```{r}
+#add new column called difference which is difference between cases and deaths
+mutate(covid_data,difference = cases-deaths)
+```
+You don't have to add a new column, you can change a column you already have by calling it the same name
+```{r}
+#make the area name column uppercase using the toupper() function
+mutate(covid_data,area_name = toupper(area_name))
+```
+Notice in that last example we nested the toupped() fnuction within the mutate() function. You'll probably end up doing wuite a lot of this.
+
+You can add or change many columns at once, e.g. 
+```{r}
+#make the area name column uppercase using the toupper() function and add new column called difference which is difference between cases and deaths
+mutate(covid_data,
+       difference = cases-deaths,
+       area_name = toupper(area_name))
+```
+
+## The pipe %>%
+
+The pipe (which is the `%>%` symbol) is personally speaking the most vibesy bit of working with R and the tidyverse.
+You can imagine it as meaning the words _and then,_.
+you add it to the end of a line of code after you have done a function, and then it uses that line as the first argument in the next line of code.
+Here is an example from earlier
+```{r results='hide'}
+#arrange covid_data by deaths, descending
+by_deaths <- arrange(covid_data,desc(deaths))
+#lets take a look at the first 10 rows
+head(by_deaths,10)
+```
+Lets rewrite it using the pipe (the comments are what the code is :
+```{r}
+#first, get covid data, and then
+by_deaths <- covid_data %>%
+  #arrange by deaths, descending, and then
+  arrange(desc(deaths)) %>%
+  #lets take a look at the first 10 rows
+  head(10)
+```
+This approach has many advantages. Here is an extreme example using all the functions we have learned. Without the pipe it is an unreadable mess of nested brackets, the first function that r runs (`select()`) sandwiched right in the middle, and the last thing we are doing (`mutate()`) at either end.
+```{r}
+#Without the pipe
+covid_data_clean <- mutate(filter(arrange(rename(select(covid_data,-new_admissions),new_cases = cases,new_deaths=deaths),desc(new_deaths)),area_name=="Derbyshire"),difference=new_cases-new_deaths)
+```
+Once rewritten it makes it clear what we are doing and in which order. 
+```{r}
+#With the pipe
+covid_data_clean <- covid_data %>%
+  select(-new_admissions) %>%
+  rename(new_cases = cases,new_deaths=deaths) %>%
+  arrange(desc(new_deaths)) %>%
+  filter(area_name=="Derbyshire") %>%
+  mutate(difference=new_cases-new_deaths)
+```
+From now on we will use the pipe.
