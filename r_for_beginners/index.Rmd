@@ -36,6 +36,8 @@ Like in excel (cell format), R handles different types of data.
 You can assign data to variables, which saves them in the memory of the session, where you can call them later.
 You do that using the `<-` arrow symbol.
 
+*To save anything you have to assign it a name with the `<-` symbol. Otherwise your code will run, but the output won't be stored in memory.*
+
 ### Numeric, character and logical
 Some basic data types are numeric, character and logical (true or false)
 ```{r}
@@ -83,7 +85,7 @@ I usually use read_csv() (you first have to have loaded tidyverse or readr with 
 To read in a csv from the internet and save it to your environment you can simply read in a URL, e.g.
 
 ```{r}
-#covid_data <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=utla&metric=newAdmissions&metric=newCasesByPublishDate&metric=newDeaths28DaysByDeathDate&format=csv")
+covid_data <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=utla&metric=newAdmissions&metric=newCasesByPublishDate&metric=newDeaths28DaysByDeathDate&format=csv")
 ```
 
 You can also save a csv to your working directory (if you are unsre what this is the function getwd() will tell you), and read it in using the file name:
@@ -308,3 +310,107 @@ covid_data_clean <- covid_data %>%
   mutate(difference=new_cases-new_deaths)
 ```
 From now on we will use the pipe.
+
+
+## More data manipulation
+
+### Pivoting from long to wide and back
+
+Often you will need to change the shape of data from long to wide.
+
+An example of the difference between the two data shapes is [here](https://i.stack.imgur.com/i1Dne.jpg). Datawrapper uses wide data, while to make graphics in R itself you need long data.
+
+To switch between the two you use `pivot_longer()` and `pivot_wider()`.
+
+Here's an example using the Covid data (which comes as 'long' data). Let's say we wanted to make a chart in datawrapper looking at Covid cases in Essex, Derbyshire, and Newham - we would need 'wide data' with a column for each one. in `pivot_wider()` you have to specify the where the names of your new columns are coming from, and where the values are coming from.
+
+```{r message=FALSE}
+#first make a vector of the areas we want
+areas_we_want <- c("Essex","Derbyshire","Newham")
+
+#get our covid data
+covid_data <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=utla&metric=newAdmissions&metric=newCasesByPublishDate&metric=newDeaths28DaysByDeathDate&format=csv")
+
+covid_wide <- covid_data %>%
+  #first I am cleaning the names
+  clean_names() %>%
+  #then filtering so we just have those areas
+  filter(area_name %in% areas_we_want) %>%
+  #I am choosing only the columns that I want using select. new_cases_by_publish_date is being renamed to cases.
+  select(area_name,date,cases=new_cases_by_publish_date) %>%
+  #Now I am pivoting, with the names coming from the area_name column and the values coming from the cases column.
+  pivot_wider(names_from = area_name,values_from = cases)
+
+#lets take a look
+head(covid_wide,10)
+
+```
+
+Now the data has a column for each area.
+
+If we wanted to do the reverse, we need to use `pivot_longer()`, and tell R which columns we want to collapse (you do this in the same way that you select columns using `select()`). You don't have to specify the names of the new columns, R defaults to "name" and "value"
+
+```{r message=FALSE}
+
+covid_wide %>%
+  #this is pivoting columns 2 through to four
+  pivot_longer(2:4)
+
+#or we could name our new columns
+
+covid_wide %>%
+  #this is pivoting columns 2 through to four
+  pivot_longer(2:4,names_to="area",values_to="cases")
+
+```
+
+### Summarising data
+
+You can summarise data, which will find statistics for the whole of a column - this is useful if you wanted to find the mean, or total. We will use the build in dataset msleep for the examples below.
+
+```{r}
+msleep %>%
+  #make a column average sleep with the average of the sleep_total column
+  summarise(average_sleep = mean(sleep_total), 
+            min_sleep = min(sleep_total), 
+            max_sleep = max(sleep_total),
+            total_mammals = n())
+
+```
+
+### Grouping data
+
+Often you will want to group data by a value in a certain column, and summarise it, sort of like a pivot table in Excel.
+
+You do this using the function `group_by()`.
+
+Below we will summarise the data like we did before, but seperately for each 'order' of mammal rather than all mammals.
+
+```{r}
+msleep %>%
+  #tell R we want to apply any further functions on each order seperately.
+  group_by(order) %>%
+  #do our summary
+  summarise(average_sleep = mean(sleep_total), 
+            min_sleep = min(sleep_total), 
+            max_sleep = max(sleep_total),
+            total_mammals = n())
+
+```
+
+
+When using `group_by()` you don't have to `summarise()`. You can also use mutate(), slice_max() slice_min() or any other function, to apply it to each group seperately.
+
+For example, lets say we wanted to find the day with the highest number of Covid-19 cases in each area. You would do it as follows:
+
+```{r}
+covid_data %>%
+  #clean_names()
+  clean_names() %>%
+  #I am choosing only the columns that I want using select. new_cases_by_publish_date is being renamed to cases.
+  select(area_name,date,cases=new_cases_by_publish_date) %>%
+  #group by area
+  group_by(area_name) %>%
+  #top cases
+  slice_max(cases)
+```
